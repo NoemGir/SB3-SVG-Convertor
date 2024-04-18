@@ -2,3 +2,6 @@
 .ipynb_checkpoints/
 result.svg
 *.json
+*.sb3
+_MACOSX/
+Scratch/
