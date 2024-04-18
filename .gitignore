@@ -5,3 +5,4 @@ result.svg
 *.sb3
 _MACOSX/
 Scratch/
+*.ipynb
