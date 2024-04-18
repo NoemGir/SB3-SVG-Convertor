@@ -1,0 +1,4 @@
+# Ignore file
+.ipynb_checkpoints/
+result.svg
+*.json
