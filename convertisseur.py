@@ -55,17 +55,15 @@ def genererDictionnaire(lecture):
         value1 = re.search('0,"(.+?)"]]', bloc)
         value2 = re.search('2,(.+?)]', bloc)
 
-        list = [grouper(value1), grouper(value2), 0]
+        list = [grouper(value1), grouper(value2)]
         object = Bloc(opcode,parent, next, list)
-        print("bloc : ", object)
         blocs.update([(name, object)])
     return blocs
 
 
 def rightBloc(bloc):
     opcode = bloc.opcode
-    return opcode in ["motion_movesteps", "motion_turnright", "motion_turnleft", "motion_gotoxy", "motion_pointindirection"]
-
+    return opcode in ["motion_movesteps", "motion_turnright", "motion_turnleft", "motion_gotoxy", "motion_pointindirection", "control_repeat"]
 
 
 def calculX(orientation, distance):
@@ -82,51 +80,44 @@ def calculX(orientation, distance):
 
 
 def calculY(orientation, distance):
-    signe = -1
+    signe = 1
     if( 0 <= orientation[0] < 90 or 180 <= orientation[0] < 270):
         b = orientation[0] % 90
     else: 
         b = 90- (orientation[0] % 90)
 
     if (180 < orientation[0] < 360):
-        signe = 1
+        signe = -1
     b = math.radians(b)
     return math.sin(b) * distance * signe
 
 
 
-def ajouterLigne(lettre, ajout, x, y):
-    ligne = lettre + " " + str(x) + "," + str(y) + "\n"
-    print("ligne ajoutée = " + ligne) 
-    ajout = ajout + ligne
-    return ajout
+def creerLigne(lettre, x, y):
+    return lettre + " " + str(x) + "," + str(y) + "\n"
 
-
-def cas_avancer(ajout, bloc, dessin, orientation):
+def cas_avancer(bloc, dessin, orientation):
     distance = int(bloc.values[0])
     x = calculX(orientation, distance)
     y = calculY(orientation, distance)
 
     if(dessin[0]):
-        ajout = ajouterLigne("l", ajout, x, y)
+        return creerLigne("l", x, y)
     else:
-        ajout = ajouterLigne("m", ajout, x, y)
-    return ajout
+        return creerLigne("m", x, y)
 
-
-def cas_aller(ajout, bloc, dessin):
-     x = bloc.values[0]
-     y = bloc.values[1]
+def cas_aller( bloc, dessin):
+     x = int(bloc.values[0])
+     y = int(bloc.values[1])
 
      if(dessin[0]):
-         ajout = ajouterLigne("L", ajout, x, y)
+         return creerLigne("L", x, y)
      else:
-         ajout = ajouterLigne("M", ajout, x, y)
-     return ajout
+         return creerLigne("M", x, y)
 
 
 def changer_direction(bloc, orientation, droite):
-    degree = bloc.values[0]
+    degree = int(bloc.values[0])
     if(droite):
         orientation[0] += degree
     else:
@@ -134,51 +125,46 @@ def changer_direction(bloc, orientation, droite):
     orientation[0] = orientation[0]  % 360
 
 
-def actionBloc(ajout, bloc, dessin, orientation):
-    match bloc.opcode:
-        case "motion_movesteps":
-            ajout = cas_avancer(ajout, bloc, dessin, orientation)        
-        case "motion_gotoxy":
-            ajout = cas_aller(ajout, bloc, dessin)
-        case "motion_turnright":
-            changer_direction(bloc, orientation, True)
-        case "motion_turnleft":
-            changer_direction(bloc, orientation, False)
-        case "motion_pointindirection":
-            orientation[0] = int(bloc.values[0])
-    return ajout
-
-def analyseBlock(bloc, ajout, orientation, dessin):
+def analyseBlock(dico, bloc, ajout, orientation, dessin):
     if( dessin[0] ):
         dessin[0] = bloc.opcode != "pen_penUp"
     else:
         dessin[0] = bloc.opcode == "pen_penDown"
     if(rightBloc(bloc)):
-        ajout = actionBloc(ajout, bloc, dessin, orientation)
+        match bloc.opcode:
+            case "motion_movesteps":
+                return cas_avancer(bloc, dessin, orientation)        
+            case "motion_gotoxy":
+                return cas_aller( bloc, dessin)
+            case "motion_turnright":
+                changer_direction(bloc, orientation, True)
+            case "motion_turnleft":
+                changer_direction(bloc, orientation, False)
+            case "motion_pointindirection":
+                orientation[0] = int(bloc.values[0])
+            case "control_repeat":
+                for i in range (int(bloc.values[0])):
+                    ajout +=  boucle(dico, dico[bloc.values[1]], orientation, dessin)
+    return ajout
+
+def boucle(dico, bloc, orientation, dessin):
+    blocsParcourus = False
+    ajout = ""
+    while(not blocsParcourus):
+        nouvelleLigne = analyseBlock(dico, bloc, ajout, orientation, dessin)
+        ajout += nouvelleLigne
+        if (bloc.next in dico):
+                bloc = dico[bloc.next]
+        else:
+            blocsParcourus = True
     return ajout
 
 
 def genererLignes(dico):
-    blocsParcourus = False
-    bloc = dico['"bloc0"']
-    ajout = ""
     dessin = [False]
     orientation = [0]
+    ajout = boucle(dico, dico['"bloc0"'], orientation, dessin)
 
-    while(not blocsParcourus):
-        if(bloc.opcode == "control_repeat" and bloc.values[2] < int(bloc.values[0])):
-            bloc.values[2] += 1
-            bloc = dico[bloc.values[1]]
-                
-        ajout = analyseBlock(bloc, ajout, orientation, dessin)
-
-        if (bloc.next in dico):
-            bloc = dico[bloc.next]
-        else:
-            if(dico[bloc.parent].opcode == "control_repeat"):
-                bloc = dico[bloc.parent]
-            else:
-                blocsParcourus = True
     return ajout
 
 def conversionJSON():
@@ -192,7 +178,7 @@ def conversionJSON():
 
         insertLinesRVG(nouvellesLignes)    
 
-#decompresserSB3("Programme_scratch.sb3")
+decompresserSB3("Programme_scratch.sb3")
 conversionJSON()
 
 
