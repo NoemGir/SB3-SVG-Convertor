@@ -184,16 +184,17 @@ def analyseBlock(dico, bloc, orientation, dessin, coordonnees):
             case "control_repeat":
                 for i in range (int(bloc.values[0])):
                     ajout +=  boucle(dico, dico[bloc.values[1]], orientation, dessin, coordonnees)
-            case "pen_clear":
-                ajout = ""
     return ajout
 
 def boucle(dico, bloc, orientation, dessin, coordonnees):
     blocsParcourus = False
     ajout = ""
     while(not blocsParcourus):
-        nouvelleLigne = analyseBlock(dico, bloc, orientation, dessin, coordonnees)
-        ajout += nouvelleLigne
+        if(bloc.opcode != "pen_clear"):
+            nouvelleLigne = analyseBlock(dico, bloc, orientation, dessin, coordonnees)
+            ajout += nouvelleLigne
+        else:
+            ajout = ""
         if (bloc.next in dico):
                 bloc = dico[bloc.next]
         else:
