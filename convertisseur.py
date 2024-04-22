@@ -63,8 +63,8 @@ def genererDictionnaire(lecture):
 
 def rightBloc(bloc):
     opcode = bloc.opcode
-    return opcode in ["motion_movesteps", "motion_turnright", "motion_turnleft", "motion_gotoxy", "motion_pointindirection", "control_repeat"]
-
+    return opcode in ["motion_movesteps", "motion_turnright", "motion_turnleft", "motion_gotoxy", "motion_pointindirection", "control_repeat", "pen_clear",
+                     "motion_changeyby", "motion_changexby", "motion_setx", "motion_sety" ]
 
 def calculX(orientation, distance):
     signe = 1
@@ -92,40 +92,71 @@ def calculY(orientation, distance):
     return math.sin(b) * distance * signe
 
 
-
 def creerLigne(lettre, x, y):
     return lettre + " " + str(x) + "," + str(y) + "\n"
 
-def cas_avancer(bloc, dessin, orientation):
+def cas_avancer(bloc, dessin, orientation, coordonnees):
     distance = int(bloc.values[0])
     x = calculX(orientation, distance)
-    y = calculY(orientation, distance)
-
+    y = - calculY(orientation, distance)
+    coordonnees[0] += x
+    coordonnees[1] += y
     if(dessin[0]):
         return creerLigne("l", x, y)
     else:
         return creerLigne("m", x, y)
 
-def cas_aller( bloc, dessin):
-     x = int(bloc.values[0])
-     y = int(bloc.values[1])
+def changer_x(bloc, dessin, coordonnees):
 
-     if(dessin[0]):
-         return creerLigne("L", x, y)
-     else:
-         return creerLigne("M", x, y)
+    coordInit = coordonneesInitiales()
+    x = int(bloc.values[0]) + coordInit[0]
+    coordonnees[0] = x
+    if(dessin[0]):
+        return "H" + str(x)
+    else:
+        return creerLigne("M", x, coordonnees[1])
+
+def changer_y(bloc, dessin, coordonnees):
+
+    coordInit = coordonneesInitiales()
+    y = coordInit[1] - int(bloc.values[0]) 
+    coordonnees[1] = y
+    if(dessin[0]):
+        return "V" + str(y)
+    else:
+        return creerLigne("M", coordonnees[0], y)
+
+def cas_aller( bloc, dessin, coordonnees):
+
+    coordInit = coordonneesInitiales()
+    x = int(bloc.values[0]) + coordInit[0]
+    y = coordInit[1] - int(bloc.values[1])
+    coordonnees[0] = x
+    coordonnees[1] = y
+    
+    if(dessin[0]):
+        return creerLigne("L", x, y)
+    else:
+        return creerLigne("M", x, y)
 
 
 def changer_direction(bloc, orientation, droite):
     degree = int(bloc.values[0])
     if(droite):
-        orientation[0] += degree
-    else:
         orientation[0] -= degree
+    else:
+        orientation[0] += degree
     orientation[0] = orientation[0]  % 360
 
 
-def analyseBlock(dico, bloc, ajout, orientation, dessin):
+def set_orientation(orientation, value):
+    if(value < 0):
+        orientation[0] = (-value+90) % 380
+    else:
+        orientation[0] = (470-value) % 380
+
+def analyseBlock(dico, bloc, orientation, dessin, coordonnees):
+    ajout = ""
     if( dessin[0] ):
         dessin[0] = bloc.opcode != "pen_penUp"
     else:
@@ -133,25 +164,35 @@ def analyseBlock(dico, bloc, ajout, orientation, dessin):
     if(rightBloc(bloc)):
         match bloc.opcode:
             case "motion_movesteps":
-                return cas_avancer(bloc, dessin, orientation)        
+                return cas_avancer(bloc, dessin, orientation, coordonnees)
+            case "motion_changexby":
+                return cas_avancer(bloc, dessin, [0], coordonnees)
+            case "motion_changeyby":
+                return cas_avancer(bloc, dessin, [90], coordonnees)  
+            case "motion_setx":
+                return changer_x(bloc, dessin, coordonnees)
+            case "motion_sety":
+                return changer_y(bloc, dessin, coordonnees)      
             case "motion_gotoxy":
-                return cas_aller( bloc, dessin)
+                return cas_aller( bloc, dessin, coordonnees)
             case "motion_turnright":
                 changer_direction(bloc, orientation, True)
             case "motion_turnleft":
                 changer_direction(bloc, orientation, False)
             case "motion_pointindirection":
-                orientation[0] = int(bloc.values[0])
+                set_orientation(orientation, int(bloc.values[0]))
             case "control_repeat":
                 for i in range (int(bloc.values[0])):
-                    ajout +=  boucle(dico, dico[bloc.values[1]], orientation, dessin)
+                    ajout +=  boucle(dico, dico[bloc.values[1]], orientation, dessin, coordonnees)
+            case "pen_clear":
+                ajout = ""
     return ajout
 
-def boucle(dico, bloc, orientation, dessin):
+def boucle(dico, bloc, orientation, dessin, coordonnees):
     blocsParcourus = False
     ajout = ""
     while(not blocsParcourus):
-        nouvelleLigne = analyseBlock(dico, bloc, ajout, orientation, dessin)
+        nouvelleLigne = analyseBlock(dico, bloc, orientation, dessin, coordonnees)
         ajout += nouvelleLigne
         if (bloc.next in dico):
                 bloc = dico[bloc.next]
@@ -163,9 +204,16 @@ def boucle(dico, bloc, orientation, dessin):
 def genererLignes(dico):
     dessin = [False]
     orientation = [0]
-    ajout = boucle(dico, dico['"bloc0"'], orientation, dessin)
+    coordonnees = coordonneesInitiales()
+    ajout = boucle(dico, dico['"bloc0"'], orientation, dessin, coordonnees)
 
     return ajout
+
+def coordonneesInitiales():
+    with open('blank.svg', 'r') as f:
+        lecture = f.read()
+        coord1 = re.search('M (.+?),', lecture).group(1)
+        return [int(coord1), int(coord1)]
 
 def conversionJSON():
     with open('project.json', 'r') as f:
