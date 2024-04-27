@@ -9,6 +9,7 @@ import re
 import math 
 import array
 from zipfile import ZipFile
+from ivy.std_api import *
 
 class Bloc(NamedTuple):
     opcode: str
@@ -20,6 +21,7 @@ dessin = False
 coordonnees = [0, 0]
 coordInit = [0, 0]
 orientation = 0
+stop = False
 
 def decompresserSB3(sb3_name):
     print("Décompression du sb3...")
@@ -270,18 +272,33 @@ def conversionJSON():
         len = nouvellesLignes.count("\n")
         print("Génération terminée, nombre de lignes ajouté : ", len)
 
-def on_tabgo():
+IvyInit("agent_convertisseur")
+IvyStart()
+
+def on_tabgo(agent):
+    print("Agent %r sent tabgo"%agent)
     decompresserSB3("../sb3/Programme_scratch.sb3")
     conversionJSON()
 
-def on_sb3():
+def on_sb3(agent):
+    print("Agent %r sent sb3"%agent)
     decompresserSB3("Programme_scratch.sb3")
     conversionJSON()
 
-def on_json():
+def on_json(agent):
+    print("Agent %r sent json"%agent)
     conversionJSON()
 
-on_sb3()
+IvyBindMsg(on_tabgo, "^tabgo: .*")
+IvyBindMsg(on_sb3, "^sb3: .*")
+IvyBindMsg(on_tabgo, "^json: .*")
+
+while(not stop):
+    a = 0
+
+
+
+
 
 
 
