@@ -26,9 +26,8 @@ def createDictionnary(fileReading):
         next = re.search('"next":(?:"|)(.+?)(?:"|),"parent',bloc).group(1)
         parent = re.search('"parent":(?:"|)(.+?)(?:"|),',bloc).group(1)
         inputs = get_inputs(re.search('"inputs":{(.*?)},', bloc).group(1), ',"(.+?)"')
-        fields = get_inputs(re.search('"fields":{(.*?)},"shadow', bloc).group(1), '\["(.+?)",')
+        fields = get_inputs(re.search('"fields":{(.*?)},"shadow', bloc).group(1), '["(.+?)",')
         object = Bloc(opcode,parent, next, inputs, fields)
-        print("bloc ajouté : ", name, object)
         blocs.update([(name, object)])
     return blocs
 
@@ -47,7 +46,7 @@ def get_first_blocks(fileReading):
     return first
 
 def recognize_X_size(fileReading):
-        return re.search('viewBox="0 0 (.+?) ', fileReading).group(1)
+    return re.search('viewBox="0 0 (.+?) ', fileReading).group(1)
 
 def recognize_Y_size(xSize, fileReading):
-        return re.search('viewBox="0 0 ' + xSize + ' (.+?)"', fileReading).group(1)
+    return re.search('viewBox="0 0 ' + xSize + ' (.+?)"', fileReading).group(1)

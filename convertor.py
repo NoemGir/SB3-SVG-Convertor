@@ -7,9 +7,6 @@ import computeValues as cv;
 from blocStructure import Bloc
 
 """
-    blocs a ajouter : 
-        - control_stop
-
     blocs a ajouter ivy :
         - sending_answer
         - sending_askandwait
@@ -18,9 +15,6 @@ from blocStructure import Bloc
 
     blocs a tester :
         -pen_clear
-        - si ... alors control_il
-        - control_repeat_until
-        - control_if_else
 """
 
 draw = False
@@ -28,7 +22,8 @@ coordinates = [0, 0]
 initCoordinates = [0, 0]
 orientation = 0
 variables = {}
-
+color = True
+scale = 1
 
 def rightBloc(bloc):
     opcode = bloc.opcode
@@ -45,8 +40,8 @@ def moveCase(dico, bloc, orientation):
     global coordinates
 
     distance = getValue(dico, bloc, 0)
-    x = cv.compute_X(distance, orientation)
-    y = - cv.compute_Y(distance, orientation)
+    x = cv.compute_X(distance, orientation)*scale
+    y = (- cv.compute_Y(distance, orientation))*scale
     coordinates[0] += x
     coordinates[1] += y
     if(draw):
@@ -59,7 +54,7 @@ def set_X(dico, bloc):
     global draw
     global coordinates
 
-    x =  getValue(dico, bloc, 0) + initCoordinates[0]
+    x =  (getValue(dico, bloc, 0) + initCoordinates[0])*scale
 
     coordinates[0] = x
     if(draw):
@@ -71,7 +66,7 @@ def set_Y(dico, bloc):
     global coordinates
     global initCoordinates
 
-    y = initCoordinates[1] -  getValue(dico, bloc, 0)
+    y = (initCoordinates[1] -  getValue(dico, bloc, 0))*scale
     coordinates[1] = y
     if(draw):
         return "V" + str(y)
@@ -82,8 +77,8 @@ def goTo_X_Y(dico, bloc):
     global initCoordinates
     global coordinates
 
-    x = getValue(dico, bloc, 0) + initCoordinates[0]
-    y = initCoordinates[1] - getValue(dico, bloc, 1)
+    x = (getValue(dico, bloc, 0) + initCoordinates[0])*scale
+    y = (initCoordinates[1] - getValue(dico, bloc, 1))*scale
     coordinates[0] = x
     coordinates[1] = y
     
@@ -179,7 +174,6 @@ def blockAnalysis(dico, bloc : Bloc):
     global draw
     global orientation
     global coordinates
-    
     addedLines = ""
     if( draw):
         draw = bloc.opcode != "pen_penUp"
@@ -264,11 +258,12 @@ def on_sb3():
 def on_json():
     generateNewLines()
 
-on_sb3()
+def printable():
+    global scale
+    scale = 1.2
+    on_sb3()
+    fm.addBigStroke()
+    fm.transform(0, 0)
 
-
-
-
-
-
-
+printable()
+#on_sb3()

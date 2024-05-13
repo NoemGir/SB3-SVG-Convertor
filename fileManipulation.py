@@ -30,7 +30,6 @@ def insertLinesRVG(newLines):
 
 
 def getInitialCoordinate():
-    initCoordinates
 
     with open('blank.svg', 'r') as f:
         fileReading = f.read() 
@@ -40,6 +39,39 @@ def getInitialCoordinate():
         coord2 = int(ysize)/2
         initCoordinates = [coord1,  coord2]
         return initCoordinates
+    
+def modifySize(scale):
+    print("Ajuste la taille de la page...")
+    with open('result.svg', 'r') as f:
+        lines = f.read()
+
+    xsize = pm.recognize_X_size(lines)
+    ysize = pm.recognize_Y_size(xsize, lines)
+    lines = lines.replace(xsize, str(int(xsize)*scale))
+    lines = lines.replace(ysize, str(int(ysize)*scale))
+
+    with open('result.svg', 'w') as f_res:
+        f_res.write(lines)
+
+def transform(x, y):
+    print("Ajuste la taille de la page...")
+    with open('result.svg', 'r') as f:
+        lines = f.read()
+
+    lines = lines.replace("translate(0,0)", "translate(" + str(x) + "," + str(y) + ")")
+
+    with open('result.svg', 'w') as f_res:
+        f_res.write(lines)
+
+def addBigStroke():
+    with open('result.svg', 'r') as f:
+        lines = f.readlines()
+
+    lines.insert(6, '    stroke-width="' + str(14)  +'"\n')
+
+    with open('result.svg', 'w') as f_res:
+        f_res.writelines(lines)
+
     
 def JSONreader():
     print("Génération du fichier svg...")

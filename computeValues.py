@@ -37,21 +37,23 @@ def getValue(dico, bloc : Bloc, id, variables, initCoordinates, coordinates, ori
         return variables[bloc.inputs[id]]
     else:
         if(bloc.inputs[id] in dico):
-            return operatorCompute(dico, dico[bloc.inputs[id]], initCoordinates, coordinates, orientation )
+            return operatorCompute(dico, dico[bloc.inputs[id]], initCoordinates, coordinates, orientation, variables )
     return int(bloc.inputs[id])
 
 
-def operatorCompute(dico, bloc : Bloc, initCoordinates, coordinates, orientation ):
+def operatorCompute(dico, bloc : Bloc, initCoordinates, coordinates, orientation, variables):
 
     match bloc.opcode: 
         case "operator_add":
-            return getValue(dico, bloc, 0) + getValue(dico, bloc, 1)
+            return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) + getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)
         case "operator_subtract":
-            return getValue(dico, bloc, 0) - getValue(dico, bloc, 1)
+            return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) - getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)
         case "operator_multiply":
-            return getValue(dico, bloc, 0) * getValue(dico, bloc, 1)
+            return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) * getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)
         case "operator_divide":
-            return getValue(dico, bloc, 0) / getValue(dico, bloc, 1)
+            return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) / getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)
+        case "operator_mod":
+            return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) % getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)
         case "motion_xposition":
             return coordinates[0] - initCoordinates[0]
         case "motion_yposition":

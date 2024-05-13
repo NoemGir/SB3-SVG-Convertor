@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 
-<svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 550 425" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
   <path
+    transform="translate(0,0) rotate(0)"
     fill="none"
     stroke="black"
     d="

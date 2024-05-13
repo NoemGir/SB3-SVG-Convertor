@@ -25,10 +25,7 @@ IvyBindMsg(on_tabgo, "^tabgo: .*")
 IvyBindMsg(on_sb3, "^sb3: .*")
 IvyBindMsg(on_tabgo, "^json: .*")
 
-while(not stop):
-    a = 0
-
-
+IvyMainLoop()
 
 
 
