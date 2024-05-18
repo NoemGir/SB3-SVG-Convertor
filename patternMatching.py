@@ -26,7 +26,7 @@ def createDictionnary(fileReading):
         next = re.search('"next":(?:"|)(.+?)(?:"|),"parent',bloc).group(1)
         parent = re.search('"parent":(?:"|)(.+?)(?:"|),',bloc).group(1)
         inputs = get_inputs(re.search('"inputs":{(.*?)},', bloc).group(1), ',"(.+?)"')
-        fields = get_inputs(re.search('"fields":{(.*?)},"shadow', bloc).group(1), '["(.+?)",')
+        fields = get_inputs(re.search('"fields":{(.*?)},"shadow', bloc).group(1), '\["(.+?)",')
         object = Bloc(opcode,parent, next, inputs, fields)
         blocs.update([(name, object)])
     return blocs

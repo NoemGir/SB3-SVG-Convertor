@@ -18,16 +18,15 @@ def insertLinesRVG(newLines):
 
     with open('blank.svg', 'r') as f:
         lines = f.readlines()
-        
-    lines.insert(8, newLines)
+    
+    newLines = '    <path stroke = "black" d="' + newLines + '"/>'
+    lines.insert(4, newLines)
 
     with open('result.svg', 'w') as f_res:
         f_res.writelines(lines)
 
-    len = newLines.count("\n")
+    len = newLines.count("\n") +1
     print("Génération terminée, nombre de lignes ajouté : ", len)    
-
-
 
 def getInitialCoordinate():
 
@@ -54,7 +53,7 @@ def modifySize(scale):
         f_res.write(lines)
 
 def transform(x, y):
-    print("Ajuste la taille de la page...")
+    print("Ajustement de la position de la figure...")
     with open('result.svg', 'r') as f:
         lines = f.read()
 
@@ -64,13 +63,14 @@ def transform(x, y):
         f_res.write(lines)
 
 def addBigStroke():
+    print("Ajustement de la taille du trait...")
     with open('result.svg', 'r') as f:
-        lines = f.readlines()
+        lines = f.read()
 
-    lines.insert(6, '    stroke-width="' + str(14)  +'"\n')
+    lines = lines.replace('stroke-width="1"', 'stroke-width="14"')
 
     with open('result.svg', 'w') as f_res:
-        f_res.writelines(lines)
+        f_res.write(lines)
 
     
 def JSONreader():
@@ -84,3 +84,6 @@ def JSONreader():
 
         return [first_blocks, dico]
         
+def putColor(coordinate, color):
+    return '"/>\n    <path stroke = "' + color + '" d= "M ' + str(coordinate[0]) + "," + str(coordinate[1]) + " "
+    

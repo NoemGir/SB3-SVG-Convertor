@@ -7,23 +7,22 @@ import computeValues as cv;
 from blocStructure import Bloc
 
 """
-    blocs a ajouter ivy :
-        - sending_answer
-        - sending_askandwait
-        - looks_say
-        - look_sayforsecs
-
     blocs a tester :
         -pen_clear
 """
 
 draw = False
+
 coordinates = [0, 0]
 initCoordinates = [0, 0]
 orientation = 0
 variables = {}
-color = True
+
 scale = 1
+color = False
+orientationLastMovement = 0
+isNewMovement = False
+hasMoved = False
 
 def rightBloc(bloc):
     opcode = bloc.opcode
@@ -33,57 +32,101 @@ def rightBloc(bloc):
 
 
 def generateLine(lettre, x, y):
-    return lettre + " " + str(x) + "," + str(y) + "\n"
+    return lettre + " " + str(x) + "," + str(y) + " "
+
 
 def moveCase(dico, bloc, orientation):
-    global draw
-    global coordinates
+    global orientationLastMovement
+    global isNewMovement
+    global hasMoved
 
-    distance = getValue(dico, bloc, 0)
-    x = cv.compute_X(distance, orientation)*scale
-    y = (- cv.compute_Y(distance, orientation))*scale
+    addedLine = ""
+    orientationLastMovement = orientation
+    distance = getValue(dico, bloc, 0)*scale
+
+    if(color and isNewMovement):
+        addedLine = drawColorStartLine()
+        distance -= 28
+        isNewMovement = False
+
+    x = cv.compute_X(distance, orientation)
+    y = (- cv.compute_Y(distance, orientation))
+
     coordinates[0] += x
     coordinates[1] += y
+
     if(draw):
-        return generateLine("l", x, y)
+        hasMoved = True
+        return addedLine + generateLine("l", x, y)
     else:
         return generateLine("m", x, y)
 
-def set_X(dico, bloc):
-    global initCoordinates
-    global draw
-    global coordinates
 
-    x =  (getValue(dico, bloc, 0) + initCoordinates[0])*scale
+def set_X(dico, bloc):
+    global orientationLastMovement
+    global isNewMovement
+    global hasMoved
+
+    newLine = ""
+
+    x =  (getValue(dico, bloc, 0)*scale + initCoordinates[0])
+
+    orientationLastMovement = cv.computeOrientation(coordinates, [x,coordinates[1]])
+    if(color and isNewMovement):
+        newLine = drawColorStartLine()
+        isNewMovement = False
 
     coordinates[0] = x
+    
     if(draw):
-        return "H" + str(x)
+        hasMoved = True
+        return newLine + "H " + str(x)
     else:
         return generateLine("M", x, coordinates[1])
 
 def set_Y(dico, bloc):
-    global coordinates
-    global initCoordinates
+    global orientationLastMovement
+    global isNewMovement
+    global hasMoved
+    newLine = ""
 
-    y = (initCoordinates[1] -  getValue(dico, bloc, 0))*scale
+    y = (initCoordinates[1] -  getValue(dico, bloc, 0)*scale)
+
+    orientationLastMovement = cv.computeOrientation(coordinates, [coordinates[0],y])
+    if(color and isNewMovement):
+        newLine = drawColorStartLine()
+        isNewMovement = False
+        
     coordinates[1] = y
+
     if(draw):
-        return "V" + str(y)
+        hasMoved = True
+        return newLine + "V " + str(y)
     else:
         return generateLine("M", coordinates[0], y)
 
-def goTo_X_Y(dico, bloc):
-    global initCoordinates
-    global coordinates
 
-    x = (getValue(dico, bloc, 0) + initCoordinates[0])*scale
-    y = (initCoordinates[1] - getValue(dico, bloc, 1))*scale
+def goTo_X_Y(dico, bloc):
+    global orientationLastMovement
+    global isNewMovement
+    global hasMoved
+    
+    newLine = ""
+
+    x = (getValue(dico, bloc, 0)*scale + initCoordinates[0])
+    y = (initCoordinates[1] - getValue(dico, bloc, 1)*scale)
+
+    orientationLastMovement = cv.computeOrientation(coordinates, [x,y])
+    if(color and isNewMovement):
+        newLine = drawColorStartLine()
+        isNewMovement = False
+    
     coordinates[0] = x
     coordinates[1] = y
     
     if(draw):
-        return generateLine("L", x, y)
+        hasMoved = True
+        return newLine + generateLine("L", x, y)
     else:
         return generateLine("M", x, y)
 
@@ -98,14 +141,6 @@ def modifyOrientation(dico, bloc, droite):
         orientation += degree
     orientation = orientation  % 360
 
-
-def setOrientation(value):
-    global orientation
-
-    if(value < 0):
-        orientation = (-value+90) % 380
-    else:
-        orientation = (470-value) % 380
 
 def getValue(dico, bloc, id):
     return cv.getValue(dico, bloc, id, variables, initCoordinates, coordinates, orientation)
@@ -169,44 +204,86 @@ def changeVariable(dico, bloc : Bloc):
         variables.update([(bloc.fields[0], value + getValue(dico, bloc, 0))])
     else:
         variables.update([(bloc.fields[0], getValue(dico, bloc, 0))])
+    
+def drawColors(orient):
+    if(color):
+        addedLines = fm.putColor(coordinates, "red")
+        x = cv.compute_X(14, orient)
+        y = (- cv.compute_Y(14, orient))
+
+        addedLines += generateLine("l", x, y)
+        addedLines += fm.putColor([coordinates[0] + x, coordinates[1] + y], "blue")
+        addedLines += generateLine("l", x, y)
+
+        return [addedLines, 2*x, 2*y]
+    return ""
+
+def drawColorEndLine():
+    if(color and hasMoved):
+        tempOrientation = (orientationLastMovement + 180) % 360
+        addedLines = drawColors(tempOrientation)[0]
+        return addedLines + fm.putColor(coordinates, "black")
+    return ""
+
+
+def drawColorStartLine():
+    linesColors = drawColors(orientationLastMovement)
+    addedLines = linesColors[0]
+    
+    coordinates[0] += linesColors[1]
+    coordinates[1] += linesColors[2]
+    return addedLines + fm.putColor(coordinates, "black")
+
 
 def blockAnalysis(dico, bloc : Bloc):
     global draw
     global orientation
     global coordinates
+    global isNewMovement
+    global hasMoved
+
     addedLines = ""
     if( draw):
         draw = bloc.opcode != "pen_penUp"
+        if(not draw):
+           if(hasMoved):
+                addedLines = drawColorEndLine()
+           isNewMovement = False
+           hasMoved = False
     else:
         draw = bloc.opcode == "pen_penDown"
+        if(draw):
+            hasMoved = False
+            isNewMovement = True
+
     if(rightBloc(bloc)):
         match bloc.opcode:
             case "motion_movesteps":
-                return moveCase(dico, bloc, orientation)
+                return addedLines + moveCase(dico, bloc, orientation)
             case "motion_changexby":
-                return moveCase(dico, bloc, 0)
+                return addedLines + moveCase(dico, bloc, 0)
             case "motion_changeyby":
-                return moveCase(dico, bloc, 90)  
+                return addedLines + moveCase(dico, bloc, 90)  
             case "motion_setx":
-                return set_X(dico, bloc)
+                return addedLines + set_X(dico, bloc)
             case "motion_sety":
-                return set_Y(dico, bloc)      
+                return addedLines + set_Y(dico, bloc)      
             case "motion_gotoxy":
-                return goTo_X_Y(dico,  bloc)
+                return addedLines + goTo_X_Y(dico,  bloc)
             case "motion_turnright":
                 modifyOrientation(dico, bloc, True)
             case "motion_turnleft":
                 modifyOrientation(dico, bloc, False)
             case "motion_pointindirection":
-                setOrientation(getValue(dico, bloc, 0))
+                orientation = cv.convertOrientation(getValue(dico, bloc, 0))
             case "control_repeat":
-                return controlRepeat(dico, bloc)
+                return addedLines + controlRepeat(dico, bloc)
             case "control_repeat_until":
-                return controlRepeatUntil(dico, bloc)
+                return addedLines + controlRepeatUntil(dico, bloc)
             case "control_if_else":
-                return controlIfElse(dico, bloc)
+                return addedLines + controlIfElse(dico, bloc)
             case "control_if":
-                return controlIf(dico, bloc)
+                return addedLines + controlIf(dico, bloc)
             case "data_setvariableto":
                 variables.update([(bloc.fields[0], getValue(dico, bloc, 0))])
             case "data_changevariableby":
@@ -218,10 +295,9 @@ def sequenceLoop(dico, bloc : Bloc):
     blocsParcourus = False
     addedLines = ""
     while(not blocsParcourus):
-        if(bloc.opcode != "pen_clear"):
-            addedLines += blockAnalysis(dico, bloc)
-        else:
-            addedLines = ""
+        
+        addedLines += blockAnalysis(dico, bloc)
+
         if (bloc.next in dico):
                 bloc = dico[bloc.next]
         else:
@@ -243,7 +319,7 @@ def generateNewLines():
     addedLines = generateLine("M", initCoordinates[0], initCoordinates[1])
 
     for first in first_blocks:
-        addedLines += sequenceLoop(dico, dico[first])
+        addedLines += sequenceLoop(dico, dico[first]) + drawColorEndLine()
 
     fm.insertLinesRVG(addedLines)
 
@@ -260,7 +336,11 @@ def on_json():
 
 def printable():
     global scale
-    scale = 1.2
+    global color 
+    global isNewMovement
+    isNewMovement = False
+    color = True
+    scale = 1.4
     on_sb3()
     fm.addBigStroke()
     fm.transform(0, 0)

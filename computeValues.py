@@ -31,6 +31,44 @@ def compute_Y(distance, orientation):
     b = math.radians(b)
     return math.sin(b) * distance * sign
 
+def computeOrientation(initialCoord, finalCoord):
+    adjacentSideLenght = abs(initialCoord[0] - finalCoord[0])
+    opositeSideLenght = abs(initialCoord[1] - finalCoord[1])
+    if(opositeSideLenght == 0):
+        if(initialCoord[0] < finalCoord[0]):
+            return 0
+        else:
+            return 180
+    
+    if(adjacentSideLenght != 0):
+        angle = math.degrees(math.atan(opositeSideLenght / adjacentSideLenght))
+    else:
+        if(initialCoord[1] > finalCoord[1]):
+            return 90
+        else:
+            return 270
+        
+    if(initialCoord[0] < finalCoord[0]):
+        if(initialCoord[1] > finalCoord[1]):
+            return angle
+        else:
+            return 360 - angle
+    else:
+        if(initialCoord[1] > finalCoord[1]):
+            return 180 - angle
+        else:
+            return 180 + angle
+
+def convertOrientation(scratchOrient):
+    if( -90 <= scratchOrient <= 90):
+        return 90-scratchOrient
+    else:
+        return 450-scratchOrient
+
+def computeDistance(coordinate, destination):
+    return  math.sqrt((coordinate[0] - destination[0])**2 + (coordinate[1] - destination[1])**2)
+
+
 #return the calculated value of the idth input of the bloc
 def getValue(dico, bloc : Bloc, id, variables, initCoordinates, coordinates, orientation):
     if(bloc.inputs[id] in variables):
