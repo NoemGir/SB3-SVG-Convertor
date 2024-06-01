@@ -5,7 +5,7 @@ import math
 from blocStructure import Bloc
 
 def compute_X(distance, orientation):
-
+    """compute the x coordinate after moving in the distance and orientation given"""
     sign = 1
     if( 0 <= orientation < 90 or 180 <= orientation < 270):
         b = 90 - (orientation % 90)
@@ -19,7 +19,7 @@ def compute_X(distance, orientation):
 
 
 def compute_Y(distance, orientation):
-
+    """compute the y coordinate after moving in the distance and orientation given"""
     sign = 1
     if( 0 <= orientation < 90 or 180 <= orientation < 270):
         b = orientation % 90
@@ -32,6 +32,7 @@ def compute_Y(distance, orientation):
     return math.sin(b) * distance * sign
 
 def computeOrientation(initialCoord, finalCoord):
+    """compute the angle bewteen an horizontal line and the line formed by initialCoord to finalCoord"""
     adjacentSideLenght = abs(initialCoord[0] - finalCoord[0])
     opositeSideLenght = abs(initialCoord[1] - finalCoord[1])
     if(opositeSideLenght == 0):
@@ -60,17 +61,19 @@ def computeOrientation(initialCoord, finalCoord):
             return 180 + angle
 
 def convertOrientation(scratchOrient):
+    """convert the scratch orientation into this converter's orientation system"""
     if( -90 <= scratchOrient <= 90):
         return 90-scratchOrient
     else:
         return 450-scratchOrient
 
 def computeDistance(coordinate, destination):
+    """compute the distance bewteen the coordinate and the distination coordonate"""
     return  math.sqrt((coordinate[0] - destination[0])**2 + (coordinate[1] - destination[1])**2)
 
 
-#return the calculated value of the idth input of the bloc
 def getValue(dico, bloc : Bloc, id, variables, initCoordinates, coordinates, orientation):
+    """return the calculated value of the idth input of the bloc"""
     if(bloc.inputs[id] in variables):
         return variables[bloc.inputs[id]]
     else:
@@ -80,7 +83,7 @@ def getValue(dico, bloc : Bloc, id, variables, initCoordinates, coordinates, ori
 
 
 def operatorCompute(dico, bloc : Bloc, initCoordinates, coordinates, orientation, variables):
-
+    """analyse the given operator block and return the result of it's action"""
     match bloc.opcode: 
         case "operator_add":
             return getValue(dico, bloc, 0,  variables, initCoordinates, coordinates, orientation) + getValue(dico, bloc, 1,  variables, initCoordinates, coordinates, orientation)

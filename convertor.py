@@ -2,14 +2,9 @@
 # coding: utf-8
 
 import fileManipulation as fm;
-import patternMatching as pm;
 import computeValues as cv;
 from blocStructure import Bloc
-
-"""
-    blocs a tester :
-        -pen_clear
-"""
+import sys
 
 draw = False
 
@@ -25,17 +20,23 @@ isNewMovement = False
 hasMoved = False
 
 def rightBloc(bloc):
+    """Indicate whether the given bloc is known by the convertor or not"""
     opcode = bloc.opcode
     return opcode in ["motion_movesteps", "motion_turnright", "motion_turnleft", "motion_gotoxy", "motion_pointindirection", "control_repeat", "pen_clear",
                      "motion_changeyby", "motion_changexby", "motion_setx", "motion_sety", "control_repeat_until", "data_setvariableto", "data_changevariableby",
-                      "control_if", "control_if_else" ]
+                      "control_if", "control_if_else", "procedures_call" ]
 
 
 def generateLine(lettre, x, y):
+    """return a string representing a movement in the svg, defined by the letter and the two coordinates x and y"""
     return lettre + " " + str(x) + "," + str(y) + " "
 
 
 def moveCase(dico, bloc, orientation):
+    """Case movement : motion_movesteps / motion_changeyby / motion_changexby
+    
+       perform the movement and return the lines that needs to be added to the svg 
+    """
     global orientationLastMovement
     global isNewMovement
     global hasMoved
@@ -63,6 +64,10 @@ def moveCase(dico, bloc, orientation):
 
 
 def set_X(dico, bloc):
+    """Case movement : motion_setx
+        
+       perform the movement and return the lines that needs to be added to the svg 
+    """
     global orientationLastMovement
     global isNewMovement
     global hasMoved
@@ -85,6 +90,10 @@ def set_X(dico, bloc):
         return generateLine("M", x, coordinates[1])
 
 def set_Y(dico, bloc):
+    """Case movement : motion_sety
+        
+       perform the movement and return the lines that needs to be added to the svg 
+    """
     global orientationLastMovement
     global isNewMovement
     global hasMoved
@@ -107,6 +116,10 @@ def set_Y(dico, bloc):
 
 
 def goTo_X_Y(dico, bloc):
+    """Case movement : motion_gotoxy
+        
+       perform the movement and return the lines that needs to be added to the svg 
+    """
     global orientationLastMovement
     global isNewMovement
     global hasMoved
@@ -131,11 +144,16 @@ def goTo_X_Y(dico, bloc):
         return generateLine("M", x, y)
 
 
-def modifyOrientation(dico, bloc, droite):
+def modifyOrientation(dico, bloc, right):
+    """modify the orientation
+    
+        the argument right is a boolean indicating weither the rotation is
+        toward the right or the left
+    """
     global orientation
 
     degree = getValue(dico, bloc, 0)
-    if(droite):
+    if(right):
         orientation -= degree
     else:
         orientation += degree
@@ -143,15 +161,22 @@ def modifyOrientation(dico, bloc, droite):
 
 
 def getValue(dico, bloc, id):
+    """get the value inside the input at index id of the given block
+    
+       for exemple, if an opetator block is inside the input field of the bloc,
+       it return the result of the opetator.
+    """
     return cv.getValue(dico, bloc, id, variables, initCoordinates, coordinates, orientation)
 
 def inEdge():
+    """indicate if the actual cursor is touching the edge of the svg"""
     global coordinates
     global initCoordinates
 
     return 0 < coordinates[0] < coordinates[0]*2 and 0 < coordinates[1] < coordinates[1]*2
 
 def condition(dico, bloc : Bloc):
+    """search the condition given by the bloc"""
     match bloc.opcode: 
         case "operator_or":
             return condition(dico, dico[bloc.inputs[0]]) or condition(dico, dico[bloc.inputs[1]])
@@ -171,18 +196,30 @@ def condition(dico, bloc : Bloc):
     return False
 
 def controlRepeat(dico, bloc : Bloc):
+    """case control_repeat 
+    
+       Execute the code subtrack to the control_repeat block as much time as the block indicates
+    """
     addedLines = ""
     for i in range (getValue(dico, bloc, 0)):
         addedLines +=  sequenceLoop(dico, dico[ bloc.inputs[1]] )
     return addedLines
 
 def controlRepeatUntil(dico, bloc : Bloc):
+    """case control_repeat_until
+    
+       Execute the code subtrack to the control_repeat_until block while the condition inside the block is true
+    """
     addedLines = ""
     while(not condition(dico, dico[bloc.inputs[1]]) ):
         addedLines +=  sequenceLoop(dico, dico[bloc.inputs[0]] )
     return addedLines
 
 def controlIfElse(dico, bloc : Bloc):
+    """case control_if_else
+    
+       Execute the code subtrack to the control_if_else block given relative to the condition of the block
+    """
     addedLines = ""
     if(condition(dico, dico[bloc.inputs[2]])):
         addedLines +=  sequenceLoop(dico, dico[bloc.inputs[0]] )
@@ -191,12 +228,20 @@ def controlIfElse(dico, bloc : Bloc):
     return addedLines
 
 def controlIf( dico, bloc : Bloc):
+    """case control_if
+    
+       Execute the code subtrack to the control_if if the condition is true
+    """
     addedLines = ""
     if(condition(dico, dico[bloc.inputs[1]])):
         addedLines +=  sequenceLoop(dico, dico[bloc.inputs[0]] )
     return addedLines
 
 def changeVariable(dico, bloc : Bloc):
+    """case data_changevariableby
+    
+       Modify the value inside a variable or create a variable with this value if the variable didn't exist previously
+    """
     global variables 
 
     if(bloc.fields[0] in variables):
@@ -206,6 +251,7 @@ def changeVariable(dico, bloc : Bloc):
         variables.update([(bloc.fields[0], getValue(dico, bloc, 0))])
     
 def drawColors(orient):
+    """add the red and blue color sections to the svg, at the orientation given"""
     if(color):
         addedLines = fm.putColor(coordinates, "red")
         x = cv.compute_X(14, orient)
@@ -219,6 +265,7 @@ def drawColors(orient):
     return ""
 
 def drawColorEndLine():
+    """case of the colors at the end of a line : add the colors if necessary"""
     if(color and hasMoved):
         tempOrientation = (orientationLastMovement + 180) % 360
         addedLines = drawColors(tempOrientation)[0]
@@ -227,6 +274,7 @@ def drawColorEndLine():
 
 
 def drawColorStartLine():
+    """case of the colors at the start of a line : add the colors"""
     linesColors = drawColors(orientationLastMovement)
     addedLines = linesColors[0]
     
@@ -236,6 +284,10 @@ def drawColorStartLine():
 
 
 def blockAnalysis(dico, bloc : Bloc):
+    """This function read the current block and execute the action corresponding
+    
+        return the addition this block made in the svg
+    """
     global draw
     global orientation
     global coordinates
@@ -284,6 +336,8 @@ def blockAnalysis(dico, bloc : Bloc):
                 return addedLines + controlIfElse(dico, bloc)
             case "control_if":
                 return addedLines + controlIf(dico, bloc)
+            case "procedures_call":
+                return addedLines + sequenceLoop(dico, dico[dico[bloc.inputs[0]].parent])
             case "data_setvariableto":
                 variables.update([(bloc.fields[0], getValue(dico, bloc, 0))])
             case "data_changevariableby":
@@ -292,6 +346,11 @@ def blockAnalysis(dico, bloc : Bloc):
     return addedLines
 
 def sequenceLoop(dico, bloc : Bloc):
+    """ Loop over the algorithme until the current block doesn't have a next.
+
+        Can be used to scan the main algorithm as well as the substrack of the controls and procedures blocks.
+        return all the addition made in the svg given by the analysis of eached scanned block.
+    """
     blocsParcourus = False
     addedLines = ""
     while(not blocsParcourus):
@@ -306,6 +365,7 @@ def sequenceLoop(dico, bloc : Bloc):
 
 
 def generateNewLines():
+    """start the analysis of the algorithm and add the new lines to the svg"""
     global initCoordinates
     global coordinates
 
@@ -323,27 +383,56 @@ def generateNewLines():
 
     fm.insertLinesRVG(addedLines)
 
-def on_tabgo():
-    fm.extractSB3("../sb3/Programme_scratch.sb3")
+def convertor(location):
+    """ unzip the given sb3 file and start the creation of the svg"""
+    fm.extractSB3(location)
     generateNewLines()
 
-def on_sb3():
-    fm.extractSB3("Programme_scratch.sb3")
-    generateNewLines()
+def matchLocation(location):
+    """ analyse the given location and start the convertor with an adapted location
+    
+        the 'tabgo' case is created in order to make easier the search for the .sb3 created by tabgo
+    """
+    if(location == "tabgo"):
+        convertor("../tabgo/data/sb3/Programme_scratch.sb3")
+    else:
+        convertor(location)
 
-def on_json():
-    generateNewLines()
 
-def printable():
-    global scale
-    global color 
-    global isNewMovement
-    isNewMovement = False
-    color = True
-    scale = 1.4
-    on_sb3()
-    fm.addBigStroke()
-    fm.transform(0, 0)
+def convert(location, printable, new_scale, x, y):
+    """start the convertor in the wanted mode ( printable or not )"""
+    if(printable):
+        global scale
+        global color 
+        global isNewMovement
 
-printable()
-#on_sb3()
+        isNewMovement = False
+        color = True
+        scale = new_scale
+        matchLocation(location)
+        fm.addBigStroke()
+        fm.transform(x, y)
+    else:
+        matchLocation(location)
+
+def runConvertor():
+    """analyse the system arguments"""
+    match len(sys.argv):
+        case 2 :
+            convert(sys.argv[1], False, 0, 0, 0)
+        case num if 3 <= num <= 5 :
+            x = 0
+            y = 0
+            if(len(sys.argv) >= 3):
+                scale = float(sys.argv[2])
+            if(len(sys.argv) >= 4) :
+                x = int(sys.argv[3])
+            if(len(sys.argv) >= 5):
+                y = int(sys.argv[4])
+            convert(sys.argv[1], True, scale, x, y)
+        case _ :
+            print("--Usage input : <tabgo or <location_sb3> > [optionnal if printable : <scale> <x transform> <y transform> ]")
+    
+runConvertor()
+        
+    

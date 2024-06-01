@@ -6,6 +6,7 @@ from zipfile import ZipFile
 import patternMatching as pm;
 
 def extractSB3(sb3_name):
+    """ Extract the .json file from the given .sb3 file and put it in the current repertory"""
     print("Décompression du sb3...")
     with ZipFile(sb3_name, "r") as obj_zip:
         FileNames = obj_zip.namelist()
@@ -15,7 +16,7 @@ def extractSB3(sb3_name):
 
 
 def insertLinesRVG(newLines):
-
+    """insert in result.svg the new generated lines"""
     with open('blank.svg', 'r') as f:
         lines = f.readlines()
     
@@ -29,7 +30,7 @@ def insertLinesRVG(newLines):
     print("Génération terminée, nombre de lignes ajouté : ", len)    
 
 def getInitialCoordinate():
-
+    """return the coordinate of the middle of the reference svg"""
     with open('blank.svg', 'r') as f:
         fileReading = f.read() 
         xsize = pm.recognize_X_size(fileReading)
@@ -40,6 +41,7 @@ def getInitialCoordinate():
         return initCoordinates
     
 def modifySize(scale):
+    """modify the size of the generated svg : existing_size * scale"""
     print("Ajuste la taille de la page...")
     with open('result.svg', 'r') as f:
         lines = f.read()
@@ -53,6 +55,7 @@ def modifySize(scale):
         f_res.write(lines)
 
 def transform(x, y):
+    """modify the values inside the 'translate' fields to change the position of the figure"""
     print("Ajustement de la position de la figure...")
     with open('result.svg', 'r') as f:
         lines = f.read()
@@ -63,6 +66,7 @@ def transform(x, y):
         f_res.write(lines)
 
 def addBigStroke():
+    """increase the thickness of the stroke"""
     print("Ajustement de la taille du trait...")
     with open('result.svg', 'r') as f:
         lines = f.read()
@@ -74,6 +78,7 @@ def addBigStroke():
 
     
 def JSONreader():
+    """read the json file and return the dictionary containing the bloc informations and the first blocs"""
     print("Génération du fichier svg...")
     with open('project.json', 'r') as f:
         fileReading = f.read()
@@ -85,5 +90,10 @@ def JSONreader():
         return [first_blocks, dico]
         
 def putColor(coordinate, color):
+    """return the lines to add to the svg in order to change the color
+    
+        the argument 'coordinate' is used to keep the cursor at the same place as previously
+
+    """
     return '"/>\n    <path stroke = "' + color + '" d= "M ' + str(coordinate[0]) + "," + str(coordinate[1]) + " "
     
